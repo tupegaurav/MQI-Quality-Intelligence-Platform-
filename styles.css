@@ -235,23 +235,40 @@ input, select { transition: border-color .15s ease, box-shadow .15s ease; }
 .result-message li { margin-top: 2px; }
 
 /* =========================================================
-   Snapshot / gauges
+   Snapshot / metric bars
    ========================================================= */
 .snapshot-card { position: sticky; top: 90px; }
 .snapshot-list { margin-top: 22px; display: grid; gap: 14px; }
-.metric { padding: 14px 16px 10px; border-radius: var(--radius-sm); background: var(--surface-2); border: 1px solid var(--border); }
+.metric { padding: 16px; border-radius: var(--radius-sm); background: var(--surface-2); border: 1px solid var(--border); }
 .metric-top { display: flex; align-items: baseline; justify-content: space-between; }
 .metric dt { color: var(--text-muted); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; }
-.metric dd { margin: 0; font-family: var(--font-mono); font-size: 21px; line-height: 1.2; font-weight: 600; }
+.metric dd { margin: 0; font-family: var(--font-mono); font-size: 24px; line-height: 1.2; font-weight: 600; }
 
-.gauge { display: block; width: 100%; height: auto; margin-top: 6px; }
-.gauge-track { fill: none; stroke: var(--border); stroke-width: 8; stroke-linecap: round; }
-.gauge-zone { fill: none; stroke-width: 8; opacity: .55; }
-.gauge-zone-go { stroke: var(--go); }
-.gauge-zone-warn { stroke: var(--warn); }
-.gauge-zone-stop { stroke: var(--stop); }
-.gauge-needle { stroke: var(--text); stroke-width: 3; stroke-linecap: round; transition: transform .35s cubic-bezier(.4, 0, .2, 1); transform-origin: 60px 62px; }
-.gauge-pivot { fill: var(--text); }
+.metric-bar-track {
+  margin-top: 12px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+.metric-bar-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: var(--go);
+  transition: width .4s cubic-bezier(.4, 0, .2, 1), background-color .25s ease;
+}
+.metric-bar-fill.warn { background: var(--warn); }
+.metric-bar-fill.stop { background: var(--stop); }
+
+.metric-status {
+  margin: 8px 0 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--go);
+}
+.metric-status.warn { color: var(--warn); }
+.metric-status.stop { color: var(--stop); }
 
 /* =========================================================
    Result record
