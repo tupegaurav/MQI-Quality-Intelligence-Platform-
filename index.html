@@ -3,66 +3,133 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="MQI — Manufacturing Quality Inspection platform" />
-  <title>MQI — Quality Intelligence Platform</title>
-  <link rel="stylesheet" href="./styles.css?v=2" />
+  <meta name="description" content="MQI — Manufacturing Quality Inspection platform for recording, validating and exporting part inspection records." />
+  <meta name="color-scheme" content="light dark" />
+  <title>MQI — Manufacturing Quality Inspection</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232A4D6E'/%3E%3Cpath d='M12 20h6v24h-6zM46 20h6v24h-6z' fill='%23F4F5F3'/%3E%3Crect x='18' y='30' width='28' height='4' fill='%23F4F5F3'/%3E%3Cpath d='M20 20v6M26 20v4M32 20v6M38 20v4M44 20v6' stroke='%23F4F5F3' stroke-width='2'/%3E%3C/svg%3E" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="styles.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
-  <script src="./script.js?v=2" defer></script>
+  <script src="script.js" defer></script>
 </head>
 <body>
+  <a class="skip-link" href="#mainContent">Skip to main content</a>
+
   <header class="site-header">
+    <div class="tick-rule" aria-hidden="true"></div>
     <div class="header-inner">
-      <div class="brand-mark">MQI</div>
-      <div class="brand-copy">
-        <h1>MQI — Quality Intelligence Platform</h1>
-        <p>Manufacturing Quality Inspection</p>
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 64 64" width="26" height="26">
+          <path d="M6 12h5v40H6zM53 12h5v40h-5z" fill="currentColor" />
+          <rect x="11" y="30" width="42" height="4" fill="currentColor" />
+          <path d="M15 12v7M22 12v4M29 12v7M36 12v4M43 12v7M48 12v4" stroke="currentColor" stroke-width="2.4" />
+        </svg>
       </div>
-      <button id="themeToggle" class="theme-toggle" type="button" aria-label="Switch theme">
+      <div class="brand-copy">
+        <h1>MQI <span class="brand-divider">/</span> Manufacturing Quality Inspection</h1>
+        <p>Gaurav Engineering Projects &middot; Inspection &amp; conformance records</p>
+      </div>
+      <button id="themeToggle" class="theme-toggle" type="button" aria-label="Switch theme" aria-pressed="false">
         <span id="themeIcon" aria-hidden="true">☀</span>
         <span id="themeText">Light</span>
       </button>
     </div>
   </header>
 
-  <main class="container">
+  <main class="container" id="mainContent">
+
+    <div class="stat-strip" id="statStrip" aria-label="Today's inspection summary">
+      <div class="stat-tile">
+        <dt>Inspections today</dt>
+        <dd id="statCount">0</dd>
+      </div>
+      <div class="stat-tile">
+        <dt>Parts checked today</dt>
+        <dd id="statChecked">0</dd>
+      </div>
+      <div class="stat-tile">
+        <dt>Avg. reject rate today</dt>
+        <dd id="statRejectAvg">0.00%</dd>
+      </div>
+    </div>
+
     <div class="top-grid">
-      <form id="inspectionForm" class="card inspection-card" novalidate>
-        <h2>Inspection Details</h2>
-        <p class="muted">Record the inspection quantities for a part and submit them to the quality system.</p>
+      <form id="inspectionForm" class="card inspection-card" novalidate autocomplete="off">
+        <div class="card-head">
+          <h2>Inspection Details</h2>
+          <p class="muted">Record the inspection quantities for a part and submit them to the quality system.</p>
+        </div>
 
         <div class="form-grid">
-          <div class="field full">
-            <label for="partName">Part Name <span class="required">*</span></label>
-            <select id="partName" required>
-              <option value="">Select a part…</option>
-            </select>
-            <p id="partNameError" class="error"></p>
+          <div class="field full combobox" data-combobox>
+            <label for="partName">Part Name <span class="required" aria-hidden="true">*</span></label>
+            <div class="combobox-control">
+              <svg class="combobox-icon" aria-hidden="true" viewBox="0 0 20 20" width="16" height="16">
+                <circle cx="8.5" cy="8.5" r="6" fill="none" stroke="currentColor" stroke-width="1.6" />
+                <line x1="13" y1="13" x2="18" y2="18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+              </svg>
+              <input
+                id="partName"
+                type="text"
+                role="combobox"
+                aria-expanded="false"
+                aria-controls="partNameListbox"
+                aria-autocomplete="list"
+                aria-describedby="partNameHelp"
+                autocomplete="off"
+                placeholder="Search or choose a part…"
+                required
+              />
+              <button type="button" class="combobox-clear hidden" id="partNameClear" aria-label="Clear part name" tabindex="-1">✕</button>
+            </div>
+            <ul id="partNameListbox" class="combobox-list hidden" role="listbox" aria-label="Parts"></ul>
+            <p id="partNameHelp" class="hint">Start typing to filter, or use ↑ ↓ and Enter to choose.</p>
+            <p id="partNameError" class="error" role="alert"></p>
           </div>
 
           <div class="field">
-            <label for="checkQty">Check Qty <span class="required">*</span></label>
-            <input id="checkQty" type="number" min="0" step="1" required />
-            <p id="checkQtyError" class="error"></p>
+            <label for="checkQty">Check Qty <span class="required" aria-hidden="true">*</span></label>
+            <input id="checkQty" type="number" min="0" step="1" inputmode="numeric" required />
+            <p id="checkQtyError" class="error" role="alert"></p>
           </div>
 
           <div class="field">
-            <label for="okQty">OK Qty <span class="required">*</span></label>
-            <input id="okQty" type="number" min="0" step="1" required />
-            <p id="okQtyError" class="error"></p>
+            <label for="okQty">OK Qty <span class="required" aria-hidden="true">*</span></label>
+            <input id="okQty" type="number" min="0" step="1" inputmode="numeric" required />
+            <p id="okQtyError" class="error" role="alert"></p>
           </div>
 
           <div class="field">
-            <label for="rejQty">Reject Qty <span class="required">*</span></label>
-            <input id="rejQty" type="number" min="0" step="1" required />
-            <p id="rejQtyError" class="error"></p>
+            <label for="rejQty">Reject Qty <span class="required" aria-hidden="true">*</span></label>
+            <input id="rejQty" type="number" min="0" step="1" inputmode="numeric" required />
+            <p id="rejQtyError" class="error" role="alert"></p>
           </div>
 
           <div class="field">
             <label for="reworkQty">Rework Qty <span class="optional">(optional)</span></label>
-            <input id="reworkQty" type="number" min="0" step="1" />
-            <p id="reworkQtyError" class="error"></p>
+            <input id="reworkQty" type="number" min="0" step="1" inputmode="numeric" />
+            <p id="reworkQtyError" class="error" role="alert"></p>
           </div>
+
+          <div class="field">
+            <label for="inspectorName">Inspector Name <span class="optional">(optional)</span></label>
+            <input id="inspectorName" type="text" maxlength="60" placeholder="e.g. R. Deshmukh" />
+          </div>
+
+          <div class="field full">
+            <label for="remarks">Remarks <span class="optional">(optional)</span></label>
+            <textarea id="remarks" rows="2" maxlength="240" placeholder="Anything the record should note — deviation, batch, tooling change…"></textarea>
+          </div>
+        </div>
+
+        <div id="balanceRow" class="balance-row" role="status">
+          <span class="balance-label">Qty balance</span>
+          <span id="balanceValue" class="balance-value balance-ok">0 unaccounted</span>
         </div>
 
         <div id="resultMessage" class="result-message hidden" role="status"></div>
@@ -74,44 +141,69 @@
       </form>
 
       <aside class="card snapshot-card">
-        <h2>Quality Snapshot</h2>
-        <p class="muted">Display-only metrics based on the quantities entered.</p>
-        <dl class="snapshot-list">
-          <div class="metric">
-            <dt>Reject %</dt>
-            <dd id="rejPercent">0.00%</dd>
+        <div class="card-head">
+          <h2>Quality Snapshot</h2>
+          <p class="muted">Live readout, calculated from the quantities entered.</p>
+        </div>
+
+        <div class="gauge-panel" aria-hidden="false">
+          <div class="gauge-row">
+            <span class="gauge-label">REJ %</span>
+            <span id="rejPercent" class="gauge-digits">0.00</span>
           </div>
-          <div class="metric">
-            <dt>Rework %</dt>
-            <dd id="reworkPercent">0.00%</dd>
+          <div class="gauge-divider"></div>
+          <div class="gauge-row">
+            <span class="gauge-label">REWORK %</span>
+            <span id="reworkPercent" class="gauge-digits">0.00</span>
           </div>
-        </dl>
+        </div>
+        <p class="gauge-caption">Readout updates as you type — nothing is sent until you submit.</p>
       </aside>
     </div>
 
     <section id="inspectionResult" class="card result-card hidden">
       <div class="section-heading">
         <h2>Inspection Result</h2>
-        <span id="statusBadge" class="status-badge">Valid</span>
+        <span id="statusBadge" class="status-stamp">Valid</span>
       </div>
       <p id="resultMeta" class="muted"></p>
       <dl id="recordGrid" class="record-grid"></dl>
       <div id="backendMessages" class="backend-messages hidden">
-        <p>Backend messages</p>
+        <p>Messages from the quality system</p>
         <ul id="messageList"></ul>
       </div>
     </section>
 
     <section id="exportSection" class="card export-card hidden">
-      <h2>EXPORT INSPECTION RECORD</h2>
-      <p class="muted">Download the current inspection record as a shareable PDF or JPG image.</p>
+      <div class="card-head">
+        <h2>Export Inspection Record</h2>
+        <p class="muted">Download the current inspection record as a shareable PDF or JPG, or print it directly.</p>
+      </div>
       <div class="actions">
         <button id="pdfBtn" class="btn btn-primary" type="button">↓ Download PDF</button>
         <button id="jpgBtn" class="btn btn-secondary" type="button">↓ Download JPG</button>
+        <button id="printBtn" class="btn btn-secondary" type="button">🖶 Print</button>
       </div>
+    </section>
+
+    <section class="card history-card">
+      <div class="card-head history-head">
+        <div>
+          <h2>Recent Inspections</h2>
+          <p class="muted">Stored on this device only — the last 25 submissions from this browser.</p>
+        </div>
+        <button id="clearHistoryBtn" class="btn btn-ghost" type="button">Clear history</button>
+      </div>
+      <div id="historyEmpty" class="history-empty">No inspections recorded yet on this device. Submit one above to start the log.</div>
+      <ul id="historyList" class="history-list hidden"></ul>
     </section>
 
     <div id="printRecord" class="print-record" aria-hidden="true"></div>
   </main>
+
+  <footer class="site-footer">
+    <div class="tick-rule" aria-hidden="true"></div>
+    <p>MQI · Gaurav Engineering Projects — records generated here are for shop-floor QA use.</p>
+  </footer>
 </body>
 </html>
