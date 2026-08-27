@@ -9,7 +9,7 @@ const WEBHOOK_URL = "https://gauravai.app.n8n.cloud/webhook/mauli-inspection";
 const THEME_KEY = "mqi-theme";
 const HISTORY_KEY = "mqi-history";
 const HISTORY_LIMIT = 50;
-const GAUGE_MAX = 25; // % — full scale of the dial
+const METRIC_SCALE_MAX = 25; // % — bar reaches 100% width at this value
 
 const $ = (id) => document.getElementById(id);
 const form = $("inspectionForm");
@@ -55,19 +55,28 @@ function metrics() {
   };
 }
 
-function setGaugeNeedle(needleEl, valuePercent) {
-  const clamped = Math.min(Math.max(valuePercent, 0), GAUGE_MAX);
-  const fraction = clamped / GAUGE_MAX;
-  const deg = fraction * 180;
-  needleEl.style.transform = `rotate(${deg}deg)`;
+function metricZone(valuePercent) {
+  if (valuePercent <= 3) return { cls: "", label: "Within target" };
+  if (valuePercent <= 8) return { cls: "warn", label: "Elevated" };
+  return { cls: "stop", label: "Above target" };
+}
+
+function setMetricBar(barEl, statusEl, valuePercent) {
+  const clamped = Math.min(Math.max(valuePercent, 0), METRIC_SCALE_MAX);
+  const fraction = clamped / METRIC_SCALE_MAX;
+  const zone = metricZone(valuePercent);
+  barEl.style.width = `${(fraction * 100).toFixed(1)}%`;
+  barEl.className = `metric-bar-fill ${zone.cls}`.trim();
+  statusEl.textContent = zone.label;
+  statusEl.className = `metric-status ${zone.cls}`.trim();
 }
 
 function updateSnapshot() {
   const m = metrics();
   $("rejPercent").textContent = `${m.reject.toFixed(2)}%`;
   $("reworkPercent").textContent = `${m.rework.toFixed(2)}%`;
-  setGaugeNeedle($("gaugeRejNeedle"), m.reject);
-  setGaugeNeedle($("gaugeReworkNeedle"), m.rework);
+  setMetricBar($("rejBarFill"), $("rejStatus"), m.reject);
+  setMetricBar($("reworkBarFill"), $("reworkStatus"), m.rework);
 }
 
 [checkQty, rejQty, reworkQty].forEach((el) => el.addEventListener("input", updateSnapshot));
