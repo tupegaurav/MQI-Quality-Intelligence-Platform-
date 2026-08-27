@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="MQI — Manufacturing Quality Inspection platform" />
+  <title>MQI — Quality Intelligence Platform</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand-mark">MQI</div>
+      <div class="brand-copy">
+        <h1>MQI — Quality Intelligence Platform</h1>
+        <p>Manufacturing Quality Inspection</p>
+      </div>
+      <button id="themeToggle" class="theme-toggle" type="button" aria-label="Switch theme">
+        <span id="themeIcon" aria-hidden="true">☀</span>
+        <span id="themeText">Light</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="top-grid">
+      <form id="inspectionForm" class="card inspection-card" novalidate>
+        <h2>Inspection Details</h2>
+        <p class="muted">Record the inspection quantities for a part and submit them to the quality system.</p>
+
+        <div class="form-grid">
+          <div class="field full">
+            <label for="partName">Part Name <span class="required">*</span></label>
+            <select id="partName" required>
+              <option value="">Select a part…</option>
+            </select>
+            <p id="partNameError" class="error"></p>
+          </div>
+
+          <div class="field">
+            <label for="checkQty">Check Qty <span class="required">*</span></label>
+            <input id="checkQty" type="number" min="0" step="1" required />
+            <p id="checkQtyError" class="error"></p>
+          </div>
+
+          <div class="field">
+            <label for="okQty">OK Qty <span class="required">*</span></label>
+            <input id="okQty" type="number" min="0" step="1" required />
+            <p id="okQtyError" class="error"></p>
+          </div>
+
+          <div class="field">
+            <label for="rejQty">Reject Qty <span class="required">*</span></label>
+            <input id="rejQty" type="number" min="0" step="1" required />
+            <p id="rejQtyError" class="error"></p>
+          </div>
+
+          <div class="field">
+            <label for="reworkQty">Rework Qty <span class="optional">(optional)</span></label>
+            <input id="reworkQty" type="number" min="0" step="1" />
+            <p id="reworkQtyError" class="error"></p>
+          </div>
+        </div>
+
+        <div id="resultMessage" class="result-message hidden" role="status"></div>
+
+        <div class="actions">
+          <button id="submitBtn" class="btn btn-primary" type="submit">Submit Inspection</button>
+          <button id="newDataBtn" class="btn btn-secondary hidden" type="button">+ New Data</button>
+        </div>
+      </form>
+
+      <aside class="card snapshot-card">
+        <h2>Quality Snapshot</h2>
+        <p class="muted">Display-only metrics based on the quantities entered.</p>
+        <dl class="snapshot-list">
+          <div class="metric">
+            <dt>Reject %</dt>
+            <dd id="rejPercent">0.00%</dd>
+          </div>
+          <div class="metric">
+            <dt>Rework %</dt>
+            <dd id="reworkPercent">0.00%</dd>
+          </div>
+        </dl>
+      </aside>
+    </div>
+
+    <section id="inspectionResult" class="card result-card hidden">
+      <div class="section-heading">
+        <h2>Inspection Result</h2>
+        <span id="statusBadge" class="status-badge">Valid</span>
+      </div>
+      <p id="resultMeta" class="muted"></p>
+      <dl id="recordGrid" class="record-grid"></dl>
+      <div id="backendMessages" class="backend-messages hidden">
+        <p>Backend messages</p>
+        <ul id="messageList"></ul>
+      </div>
+    </section>
+
+    <section id="exportSection" class="card export-card hidden">
+      <h2>EXPORT INSPECTION RECORD</h2>
+      <p class="muted">Download the current inspection record as a shareable PDF or JPG image.</p>
+      <div class="actions">
+        <button id="pdfBtn" class="btn btn-primary" type="button">↓ Download PDF</button>
+        <button id="jpgBtn" class="btn btn-secondary" type="button">↓ Download JPG</button>
+      </div>
+    </section>
+
+    <div id="printRecord" class="print-record" aria-hidden="true"></div>
+  </main>
+</body>
+</html>
