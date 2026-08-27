@@ -1,8 +1,6 @@
 /* ============================================================
-   MQI — Manufacturing Quality Inspection
+   MQI — Manufacturing Quality Inspection Console
    Vanilla JS, no build step, no framework.
-   Sections: config, dom refs, combobox, validation & readout,
-   submit/webhook, history & stats, export, theme.
    ============================================================ */
 
 (() => {
@@ -16,8 +14,8 @@
     "ADHG MASTER CYLINDER", "HONDA UNICORN MASTER CYLINDER", "H105 M/CYL", "PULSER HOLDER BRACKET"
   ];
 
+  // Your n8n production webhook — payload contract is unchanged below.
   const WEBHOOK_URL = "https://gauravai.app.n8n.cloud/webhook/mauli-inspection";
-  const THEME_KEY = "mqi-theme";
   const HISTORY_KEY = "mqi-history";
   const HISTORY_LIMIT = 25;
   const REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -38,7 +36,16 @@
   let record = null;
   let submitting = false;
   let exporting = false;
-  let partNameValue = ""; // canonical selected part, source of truth for submission
+  let partNameValue = "";
+
+  /* ================= Boot sequence (matches the console's loading pattern) ================= */
+  window.addEventListener("DOMContentLoaded", () => {
+    const reveal = () => {
+      $("og-loading").style.display = "none";
+      $("og-dashboard").style.display = "block";
+    };
+    REDUCED_MOTION ? reveal() : setTimeout(reveal, 550);
+  });
 
   /* ================= Combobox: searchable part picker ================= */
   let comboOptions = [];
@@ -112,7 +119,7 @@
   }
 
   partNameInput.addEventListener("input", () => {
-    partNameValue = ""; // typing invalidates a prior exact selection until re-matched
+    partNameValue = "";
     partNameClear.classList.toggle("hidden", !partNameInput.value);
     renderCombo(partNameInput.value);
     openCombo();
@@ -161,7 +168,6 @@
   });
 
   partNameInput.addEventListener("blur", () => {
-    // Snap back to the last valid exact match on blur; otherwise flag it on submit.
     const exact = PART_OPTIONS.find((p) => p.toLowerCase() === partNameInput.value.trim().toLowerCase());
     if (exact) selectPart(exact);
   });
@@ -188,7 +194,6 @@
     };
   }
 
-  // Smoothly tween a digit readout's displayed number, like a caliper settling on a reading.
   function animateDigits(el, toValue) {
     const from = parseFloat(el.dataset.value || "0");
     const to = toValue;
@@ -216,12 +221,13 @@
   }
 
   function updateBalance() {
-    const row = $("balanceRow");
     const out = $("balanceValue");
     const anyEntered = [checkQty, okQty, rejQty, reworkQty].some((el) => el.value.trim() !== "");
-    if (!anyEntered) { row.classList.add("hidden"); return; }
-    row.classList.remove("hidden");
-
+    if (!anyEntered) {
+      out.textContent = "Enter quantities";
+      out.className = "readout-value small";
+      return;
+    }
     const check = toNumber(checkQty.value);
     const ok = toNumber(okQty.value);
     const rej = toNumber(rejQty.value);
@@ -229,14 +235,14 @@
     const unaccounted = check - (ok + rej + rework);
 
     if (unaccounted === 0) {
-      out.textContent = "Balanced — OK + Reject + Rework = Check Qty";
-      out.className = "balance-value balance-ok";
+      out.textContent = "Balanced";
+      out.className = "readout-value small";
     } else if (unaccounted > 0) {
-      out.textContent = `${unaccounted} unaccounted for (Check Qty is higher)`;
-      out.className = "balance-value balance-off";
+      out.textContent = `${unaccounted} unaccounted`;
+      out.className = "readout-value small off";
     } else {
-      out.textContent = `${Math.abs(unaccounted)} over Check Qty — recheck the counts`;
-      out.className = "balance-value balance-off";
+      out.textContent = `${Math.abs(unaccounted)} over Check Qty`;
+      out.className = "readout-value small off";
     }
   }
 
@@ -247,6 +253,10 @@
     if (el) el.textContent = message || "";
     const input = field === "partName" ? partNameInput : $(field);
     if (input) input.classList.toggle("field-invalid", Boolean(message));
+    if (field === "partName") {
+      const control = document.querySelector(".combobox-control");
+      if (control) control.classList.toggle("field-invalid", Boolean(message));
+    }
   }
 
   function validate() {
@@ -309,12 +319,20 @@
     box.classList.remove("hidden");
   }
 
+  /* ================= Live connection indicator ================= */
+  function setLive(ok) {
+    const wrap = $("live-indicator");
+    const text = $("live-text");
+    wrap.classList.toggle("offline", !ok);
+    text.textContent = ok ? "LIVE" : "OFFLINE";
+  }
+
   /* ================= Render inspection result & print source ================= */
   function recordRows(rec) {
     const rows = [
       ["Part Name", rec.partName], ["Check Qty", rec.checkQty], ["OK Qty", rec.okQty],
       ["Reject Qty", rec.rejQty], ["Rework Qty", rec.reworkQty],
-      ["Reject %", `${rec.rejPercent.toFixed(2)}%`], ["Rework %", `${rec.reworkPercent.toFixed(2)}%`]
+      ["Reject %", `${Number(rec.rejPercent).toFixed(2)}%`], ["Rework %", `${Number(rec.reworkPercent).toFixed(2)}%`]
     ];
     if (rec.inspectorName) rows.push(["Inspector", rec.inspectorName]);
     if (rec.severity) rows.push(["Severity", rec.severity]);
@@ -327,7 +345,7 @@
     $("exportSection").classList.remove("hidden");
     $("newDataBtn").classList.remove("hidden");
     $("statusBadge").textContent = record.status;
-    $("statusBadge").classList.toggle("invalid", record.status !== "Valid");
+    $("statusBadge").className = `tier-badge ${record.status === "Valid" ? "badge-normal" : "badge-emergency"}`;
     $("resultMeta").textContent = `Response received from the quality system on ${record.submittedAt}.`;
 
     $("recordGrid").innerHTML = recordRows(record)
@@ -360,18 +378,17 @@
     `;
   }
 
-  /* ================= Submit to webhook ================= */
+  /* ================= Submit to n8n webhook ================= */
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (submitting) return;
 
-    // Final sync: allow an exact case-insensitive match typed without opening the list.
     if (!partNameValue) {
       const exact = PART_OPTIONS.find((p) => p.toLowerCase() === partNameInput.value.trim().toLowerCase());
       if (exact) selectPart(exact);
     }
     if (!validate()) {
-      const firstInvalid = form.querySelector(".field-invalid, .combobox-control.field-invalid input");
+      const firstInvalid = form.querySelector(".field-invalid");
       if (firstInvalid) firstInvalid.focus();
       return;
     }
@@ -382,7 +399,8 @@
     $("resultMessage").classList.add("hidden");
 
     const m = metrics();
-    // Payload keeps the exact original contract; new fields are additive only.
+    // Payload keeps the original field names/shape your n8n workflow expects.
+    // inspectorName / remarks are additive extras — safe for a workflow that ignores unknown keys.
     const payload = {
       partName: partNameValue,
       checkQty: toNumber(checkQty.value),
@@ -401,7 +419,17 @@
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify(payload)
       });
+
+      if (!response.ok) {
+        setLive(false);
+        const hint = response.status === 404
+          ? "Webhook not found — make sure the n8n workflow is Active (production URL, not the test URL)."
+          : `HTTP ${response.status} from n8n.`;
+        throw new Error(hint);
+      }
+
       const data = await response.json();
+      setLive(true);
       const severity = data && typeof data === "object" ? readString(data.severity) : null;
       const messages = readMessages(data);
       const base = {
@@ -424,7 +452,9 @@
       renderRecord();
       pushHistory(record);
     } catch (error) {
-      showResultMessage("error-state", "Unable to reach the quality system. Check your connection and try again.");
+      setLive(false);
+      const detail = error && error.message ? error.message : "Check your connection and try again.";
+      showResultMessage("error-state", `Unable to reach the quality system. ${detail}`);
     } finally {
       submitting = false;
       $("submitBtn").disabled = false;
@@ -505,20 +535,21 @@
   function renderHistory() {
     const list = loadHistory();
     $("historyEmpty").classList.toggle("hidden", list.length > 0);
-    $("historyList").classList.toggle("hidden", list.length === 0);
-    $("historyList").innerHTML = list.map((item) => `
-      <li class="history-item">
-        <div class="history-item-main">
-          <div class="history-item-part">${escapeHtml(item.partName)}</div>
-          <div class="history-item-meta">${escapeHtml(item.submittedAt)} &middot; Reject ${Number(item.rejPercent).toFixed(2)}%${item.inspectorName ? ` &middot; ${escapeHtml(item.inspectorName)}` : ""}</div>
-        </div>
-        <span class="history-chip ${item.status === "Valid" ? "valid" : "invalid"}">${escapeHtml(item.status)}</span>
-        <button type="button" class="btn btn-secondary history-view-btn" data-history-id="${escapeHtml(item.id)}">View</button>
-      </li>
+    $("historyTable").classList.toggle("hidden", list.length === 0);
+    $("historyBody").innerHTML = list.map((item) => `
+      <tr>
+        <td>${escapeHtml(item.partName)}</td>
+        <td>${escapeHtml(item.submittedAt)}</td>
+        <td>${escapeHtml(item.checkQty)}</td>
+        <td>${Number(item.rejPercent).toFixed(2)}%</td>
+        <td><span class="tier-badge ${item.status === "Valid" ? "badge-normal" : "badge-emergency"}">${escapeHtml(item.status)}</span></td>
+        <td>${escapeHtml(item.inspectorName || "—")}</td>
+        <td><button type="button" class="history-view-btn" data-history-id="${escapeHtml(item.id)}">View</button></td>
+      </tr>
     `).join("");
   }
 
-  $("historyList").addEventListener("click", (event) => {
+  $("historyBody").addEventListener("click", (event) => {
     const button = event.target.closest("[data-history-id]");
     if (!button) return;
     const item = loadHistory().find((i) => i.id === button.dataset.historyId);
@@ -578,22 +609,6 @@
   $("pdfBtn").addEventListener("click", () => exportRecord("pdf"));
   $("jpgBtn").addEventListener("click", () => exportRecord("jpg"));
   $("printBtn").addEventListener("click", () => window.print());
-
-  /* ================= Theme ================= */
-  function applyTheme(theme) {
-    document.documentElement.classList.toggle("dark", theme === "dark");
-    $("themeIcon").textContent = theme === "dark" ? "☾" : "☀";
-    $("themeText").textContent = theme === "dark" ? "Dark" : "Light";
-    $("themeToggle").setAttribute("aria-pressed", String(theme === "dark"));
-  }
-
-  let theme = localStorage.getItem(THEME_KEY) === "dark" ? "dark" : "light";
-  applyTheme(theme);
-  $("themeToggle").addEventListener("click", () => {
-    theme = theme === "dark" ? "light" : "dark";
-    applyTheme(theme);
-    try { localStorage.setItem(THEME_KEY, theme); } catch { /* ignore */ }
-  });
 
   /* ================= Init ================= */
   updateSnapshot();
