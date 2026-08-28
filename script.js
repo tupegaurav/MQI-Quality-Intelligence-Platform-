@@ -432,6 +432,38 @@ $("themeToggle").addEventListener("click", () => {
 });
 
 /* =========================================================
+   About modal
+   ========================================================= */
+const aboutBtn = $("aboutBtn");
+const aboutModal = $("aboutModal");
+const aboutModalClose = $("aboutModalClose");
+
+function openAbout() {
+  aboutModal.classList.remove("hidden");
+  aboutModal.setAttribute("aria-hidden", "false");
+  aboutBtn.setAttribute("aria-expanded", "true");
+  document.body.style.overflow = "hidden";
+  aboutModalClose.focus();
+}
+
+function closeAbout() {
+  aboutModal.classList.add("hidden");
+  aboutModal.setAttribute("aria-hidden", "true");
+  aboutBtn.setAttribute("aria-expanded", "false");
+  document.body.style.overflow = "";
+  aboutBtn.focus();
+}
+
+aboutBtn.addEventListener("click", openAbout);
+aboutModalClose.addEventListener("click", closeAbout);
+aboutModal.addEventListener("click", (event) => {
+  if (event.target === aboutModal) closeAbout();
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !aboutModal.classList.contains("hidden")) closeAbout();
+});
+
+/* =========================================================
    Init
    ========================================================= */
 updateSnapshot();
