@@ -123,19 +123,6 @@ input, select { transition: border-color .15s ease, box-shadow .15s ease; }
 .brand-copy p { margin: 2px 0 0; color: var(--text-muted); font-size: 12px; }
 .brand-version { color: color-mix(in srgb, var(--text-muted) 75%, transparent); }
 
-.site-nav { display: flex; align-items: center; gap: 4px; margin: 0 auto 0 28px; }
-.site-nav a {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 7px 12px;
-  border-radius: 999px;
-  color: var(--text-muted);
-  font-size: 13px; font-weight: 600;
-  text-decoration: none;
-  transition: background-color .15s ease, color .15s ease;
-}
-.site-nav a:hover { background: var(--surface-2); color: var(--text); }
-.site-nav svg { flex: 0 0 auto; opacity: .8; }
-
 /* =========================================================
    Hero
    ========================================================= */
@@ -156,15 +143,7 @@ input, select { transition: border-color .15s ease, box-shadow .15s ease; }
 }
 .hero-title { margin: 0; max-width: 620px; font-size: clamp(26px, 4vw, 38px); line-height: 1.18; font-weight: 800; letter-spacing: -.015em; }
 .hero-title .accent { color: var(--accent); }
-.hero-copy { margin: 18px 0 0; max-width: 620px; color: var(--text-muted); font-size: 14.5px; line-height: 1.6; }
-.hero-mark {
-  position: absolute; right: -10px; top: 50%; transform: translateY(-50%);
-  width: 220px; height: 220px;
-  color: var(--accent);
-  opacity: .1;
-  pointer-events: none;
-}
-@media (max-width: 780px) { .hero-mark { display: none; } }
+.hero-copy { margin: 18px 0 0; max-width: 640px; color: var(--text-muted); font-size: 14.5px; line-height: 1.6; }
 
 /* =========================================================
    How it works / Tech stack
@@ -211,7 +190,6 @@ input, select { transition: border-color .15s ease, box-shadow .15s ease; }
 
 @media (max-width: 780px) {
   .info-grid { grid-template-columns: 1fr; }
-  .site-nav { display: none; }
 }
 
 .theme-toggle {
